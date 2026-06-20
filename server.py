@@ -19,10 +19,13 @@ Run:
 from __future__ import annotations
 
 import argparse
+import collections
 import json
 import mimetypes
 import os
 import sys
+import threading
+import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -392,6 +395,64 @@ def do_match(ans: dict) -> dict:
 # HTTP handler.
 # --------------------------------------------------------------------- #
 
+# --------------------------------------------------------------------- #
+# Request guards: a public deploy must not let /api/match be hammered into
+# burning the GitHub / LLM quota, and must reject oversized or malformed
+# bodies before the pipeline runs. Both are cheap, in-process, and need no
+# extra dependency.
+# --------------------------------------------------------------------- #
+MAX_BODY_BYTES = 16 * 1024          # reject request bodies larger than 16 KB
+RATE_MAX = 20                       # max /api/match calls ...
+RATE_WINDOW = 60.0                  # ... per this many seconds, per client IP
+
+_rate_lock = threading.Lock()
+_rate_hits: "collections.defaultdict[str, collections.deque]" = \
+    collections.defaultdict(collections.deque)
+
+
+def _rate_ok(ip: str) -> tuple[bool, int]:
+    """Sliding-window limiter. Returns (allowed, retry_after_seconds)."""
+    now = time.time()
+    with _rate_lock:
+        dq = _rate_hits[ip]
+        while dq and now - dq[0] > RATE_WINDOW:
+            dq.popleft()
+        if len(dq) >= RATE_MAX:
+            return False, int(RATE_WINDOW - (now - dq[0])) + 1
+        dq.append(now)
+        if len(_rate_hits) > 4096:  # bound memory: drop idle IPs
+            for k in [k for k, v in list(_rate_hits.items()) if not v]:
+                _rate_hits.pop(k, None)
+        return True, 0
+
+
+def _sanitize_ans(ans: dict) -> dict:
+    """Whitelist keys and bound sizes before anything reaches the pipeline.
+    The pipeline applies its own relevance caps (4/5/5) on top of this; these
+    are defensive ceilings against abusive input, not product limits."""
+    def clean_list(v, maxlen=25, slen=80):
+        if not isinstance(v, list):
+            return []
+        out = []
+        for x in v[:maxlen]:
+            if isinstance(x, (str, int, float)):
+                s = str(x)[:slen].strip()
+                if s:
+                    out.append(s)
+        return out
+    stage = ans.get("stage")
+    return {
+        "stage": stage if stage in ("early", "late") else "early",
+        "langs": clean_list(ans.get("langs")),
+        "topics": clean_list(ans.get("topics")),
+        "interests": str(ans.get("interests") or "")[:500],
+        "taskSize": str(ans.get("taskSize") or "")[:40],
+        "targets": clean_list(ans.get("targets")),
+        "contrib": str(ans.get("contrib") or "")[:40],
+        "skills": clean_list(ans.get("skills")),
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "IssueScout/1.0"
 
@@ -438,13 +499,31 @@ class Handler(BaseHTTPRequestHandler):
         if path != "/api/match":
             self._send(404, {"ok": False, "message": "unknown endpoint"})
             return
+        # Per-IP rate limit so a public deploy can't be hammered.
+        ip = self.client_address[0] if self.client_address else "?"
+        ok, retry = _rate_ok(ip)
+        if not ok:
+            self._send(429, {"ok": False,
+                             "message": f"Too many requests. Try again in ~{retry}s."})
+            return
+        # Reject oversized bodies before reading them.
         try:
             length = int(self.headers.get("Content-Length", 0))
+        except (TypeError, ValueError):
+            length = 0
+        if length > MAX_BODY_BYTES:
+            self._send(413, {"ok": False, "message": "Request too large."})
+            return
+        try:
             raw = self.rfile.read(length) if length else b"{}"
             ans = json.loads(raw or b"{}")
         except (ValueError, json.JSONDecodeError):
             self._send(400, {"ok": False, "message": "invalid JSON"})
             return
+        if not isinstance(ans, dict):
+            self._send(400, {"ok": False, "message": "invalid request"})
+            return
+        ans = _sanitize_ans(ans)
         try:
             result = do_match(ans)
             self._send(200, result)
