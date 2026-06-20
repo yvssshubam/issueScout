@@ -1,0 +1,54 @@
+{
+  "_comment": "Maps a career goal / target role to GitHub topics, languages, and flagship project orgs. Used to compute domain_match (0..1) for a repo. Edit freely. Topic and language matches are weighted; flagship_orgs give a domain a strong signal when a repo belongs to a landmark project in that space.",
+
+  "backend": {
+    "topics": ["backend", "api", "rest", "graphql", "microservices", "server", "database", "orm", "web-framework"],
+    "languages": ["go", "java", "python", "rust", "c#", "ruby", "kotlin", "scala"],
+    "flagship_orgs": ["spring-projects", "django", "pallets", "expressjs", "fastapi", "gin-gonic", "nestjs", "rails"]
+  },
+  "frontend": {
+    "topics": ["frontend", "react", "vue", "angular", "ui", "css", "javascript", "typescript", "web-components", "design-system"],
+    "languages": ["javascript", "typescript", "css", "html"],
+    "flagship_orgs": ["facebook", "vuejs", "angular", "sveltejs", "vercel", "tailwindlabs", "storybookjs"]
+  },
+  "fullstack": {
+    "topics": ["fullstack", "web", "react", "node", "api", "typescript", "framework", "ssr"],
+    "languages": ["javascript", "typescript", "python", "go", "ruby"],
+    "flagship_orgs": ["vercel", "remix-run", "nuxt", "redwoodjs", "meteor"]
+  },
+  "ml": {
+    "topics": ["machine-learning", "deep-learning", "neural-network", "nlp", "computer-vision", "pytorch", "tensorflow", "transformers", "llm", "ai"],
+    "languages": ["python", "c++", "cuda"],
+    "flagship_orgs": ["pytorch", "tensorflow", "huggingface", "scikit-learn", "keras-team", "openai", "google-research"]
+  },
+  "data": {
+    "topics": ["data-science", "data-engineering", "etl", "data-pipeline", "analytics", "spark", "pandas", "dataframe", "sql", "warehouse"],
+    "languages": ["python", "scala", "sql", "r", "java"],
+    "flagship_orgs": ["apache", "pandas-dev", "dbt-labs", "great-expectations", "dagster-io", "apache-airflow"]
+  },
+  "devops": {
+    "topics": ["devops", "kubernetes", "docker", "ci-cd", "infrastructure", "terraform", "ansible", "observability", "cloud-native", "sre"],
+    "languages": ["go", "python", "shell", "rust", "hcl"],
+    "flagship_orgs": ["kubernetes", "hashicorp", "ansible", "prometheus", "grafana", "argoproj", "cncf"]
+  },
+  "mobile": {
+    "topics": ["android", "ios", "mobile", "flutter", "react-native", "kotlin", "swift", "cross-platform"],
+    "languages": ["kotlin", "swift", "dart", "java", "objective-c"],
+    "flagship_orgs": ["flutter", "facebook", "android", "expo", "ionic-team"]
+  },
+  "security": {
+    "topics": ["security", "cryptography", "infosec", "appsec", "pentest", "vulnerability", "authentication", "oauth", "encryption"],
+    "languages": ["rust", "go", "python", "c", "c++"],
+    "flagship_orgs": ["OWASP", "openssl", "letsencrypt", "aquasecurity", "trailofbits"]
+  },
+  "systems": {
+    "topics": ["systems-programming", "operating-system", "compiler", "embedded", "performance", "low-level", "kernel"],
+    "languages": ["rust", "c", "c++", "zig", "assembly"],
+    "flagship_orgs": ["rust-lang", "torvalds", "llvm", "ziglang", "redox-os"]
+  },
+  "devtools": {
+    "topics": ["developer-tools", "cli", "build-tools", "ide", "linter", "formatter", "package-manager", "tooling"],
+    "languages": ["rust", "go", "typescript", "python"],
+    "flagship_orgs": ["rust-lang", "biomejs", "astral-sh", "esbuild", "vitejs", "neovim"]
+  }
+}

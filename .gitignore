@@ -1,0 +1,30 @@
+# --- secrets (never commit) ---
+env.issuescout
+env.*.local
+*.key
+
+# --- runtime data & caches (regenerated on run) ---
+.issuescout_cache/
+.issuescout_store.json
+company_orgs_cache.json
+
+# --- python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- editor / OS / tooling ---
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

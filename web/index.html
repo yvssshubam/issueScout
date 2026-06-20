@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IssueScout · field guide to open source</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#D4D2C6; --dot:#C8C6B9;
+  --surface:#EEEDE6; --raised:#FCFBF7; --white:#FFFFFF;
+  --ink:#1C2320; --body:#3A413C; --body2:#4B524D; --muted:#858B82; --muted2:#5E645C;
+  --line:#C5C3B5; --line2:#D8D6CA;
+  --green:#2D5C4C; --green-deep:#234A3D; --green-tint:#E1E9E3;
+  --amber:#92662C; --amber-deep:#5E441C; --amber-tint:#EEE4D2; --amber-line:#C7A877;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;
+  --disp:'Archivo',var(--sans);
+  --gap:clamp(13px,2.3vh,25px);
+  --gap-s:clamp(9px,1.5vh,16px);
+}
+*{box-sizing:border-box;}
+html{font-size:105%;}
+html,body{margin:0;height:100%;}
+body{
+  font-family:var(--sans);color:var(--ink);background:var(--bg);
+  background-image:radial-gradient(var(--dot) 1px,transparent 1px);
+  background-size:30px 30px;-webkit-font-smoothing:antialiased;
+  line-height:1.5;height:100vh;overflow:hidden;display:flex;flex-direction:column;
+}
+.eyebrow{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);}
+.mono{font-family:var(--mono);}
+h1,h2,h3,h4{font-family:var(--disp);margin:0;letter-spacing:-.025em;}
+button{font-family:inherit;cursor:pointer;}
+a{color:inherit;text-decoration:none;}
+:focus-visible{outline:2px solid var(--green);outline-offset:2px;border-radius:6px;}
+
+/* shell: app fills the viewport, single panel per screen, no page scroll */
+.app{flex:1;min-height:0;width:100%;max-width:1260px;margin:0 auto;
+  padding:clamp(14px,2.4vh,26px) clamp(16px,3vw,40px);display:flex;flex-direction:column;}
+.topbar{flex:none;display:flex;align-items:center;gap:11px;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--line2);}
+.brand{font-family:var(--disp);font-weight:800;font-size:1.1rem;cursor:pointer;transition:opacity .15s;}
+.brand:hover{opacity:.7;}
+.brand span{color:var(--green);}
+.topbar .tag{font-family:var(--mono);font-size:.62rem;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;}
+.topbar .steps{margin-left:auto;display:flex;gap:7px;align-items:center;}
+.topbar .pip{width:7px;height:7px;border-radius:20px;background:var(--line);transition:width .3s,background .3s;}
+.topbar .pip.on{width:22px;background:var(--green);}
+.topbar.amber .pip.on{background:var(--amber);}
+
+#root{flex:1;min-height:0;display:flex;}
+.screen{flex:1;min-height:0;display:flex;animation:rise .4s cubic-bezier(.2,.7,.3,1) both;}
+@keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+.card{flex:1;min-height:0;display:flex;flex-direction:column;
+  background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;
+  box-shadow:0 30px 70px -50px rgba(28,35,32,.6),0 2px 0 var(--line);}
+.card.green{border-color:var(--green);box-shadow:0 30px 70px -46px rgba(45,92,76,.45),0 0 0 3px var(--green-tint);}
+.card.amber{border-color:var(--amber);box-shadow:0 30px 70px -46px rgba(146,102,44,.4),0 0 0 3px var(--amber-tint);}
+.chrome{flex:none;height:38px;display:flex;align-items:center;gap:9px;padding:0 16px;background:var(--raised);border-bottom:1px solid var(--line2);}
+.chrome .dot{width:10px;height:10px;border-radius:50%;background:var(--line2);}
+.chrome .url{font-family:var(--mono);font-size:.68rem;color:var(--muted);background:var(--surface);border:1px solid var(--line2);border-radius:6px;padding:3px 11px;}
+.chrome .stat{font-family:var(--mono);font-size:.66rem;color:var(--muted);}
+
+/* the centered, non-clipping panel body */
+.pad{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;padding:clamp(12px,1.8vh,22px) clamp(20px,4vw,54px);scrollbar-width:thin;scrollbar-color:#BFC2B6 transparent;}
+.pad::-webkit-scrollbar{width:11px;}
+.pad::-webkit-scrollbar-track{background:transparent;}
+.pad::-webkit-scrollbar-thumb{background:#BFC2B6;border-radius:8px;border:3px solid transparent;background-clip:padding-box;}
+.pad::-webkit-scrollbar-thumb:hover{background:#A6A99C;background-clip:padding-box;}
+.amberui .pad{scrollbar-color:#D3BC8E transparent;}
+.amberui .pad::-webkit-scrollbar-thumb{background:#D3BC8E;background-clip:padding-box;}
+.panel{margin-block:auto;width:100%;}
+
+/* generic split: context rail + work area */
+.split{display:grid;grid-template-columns:minmax(0,38%) minmax(0,1fr);gap:clamp(28px,4vw,64px);align-items:center;}
+.rail .eyebrow{display:block;}
+.rail h2{font-weight:800;font-size:clamp(1.6rem,2.8vw,2.4rem);line-height:1.05;margin:12px 0 0;}
+.rail h2 em{font-style:normal;color:var(--green);}
+.rail.amber h2 em{color:var(--amber);}
+.rail p{margin:14px 0 0;font-size:1.02rem;line-height:1.55;color:var(--body2);max-width:42ch;}
+.rail p i{color:var(--ink);font-style:italic;}
+
+.btn{font-family:var(--mono);font-size:.88rem;font-weight:500;display:inline-flex;align-items:center;gap:9px;
+  border-radius:9px;padding:13px 24px;border:1px solid var(--green);background:var(--green);color:#F8F7F2;transition:transform .15s,filter .15s;}
+.btn:hover{filter:brightness(1.06);}
+.btn:active{transform:translateY(1px);}
+.btn.amber{background:var(--amber);border-color:var(--amber);}
+.btn.ghost{background:var(--raised);color:var(--body2);border-color:var(--line);}
+.note{font-family:var(--mono);font-size:.74rem;color:var(--muted);line-height:1.55;}
+.linklike{font-family:var(--mono);font-size:.74rem;color:var(--muted2);text-decoration:underline;text-underline-offset:3px;background:none;border:none;padding:0;}
+.actions{margin-top:var(--gap);display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+
+/* ---- welcome live widget ---- */
+.cta-row{display:flex;align-items:center;gap:16px;margin-top:var(--gap);flex-wrap:wrap;}
+.rail .foot{margin-top:var(--gap);border-top:1px solid var(--line2);padding-top:14px;max-width:50ch;}
+.widget{background:var(--raised);border:1px solid var(--line);border-radius:14px;padding:clamp(14px,2vh,20px);display:flex;flex-direction:column;gap:var(--gap-s);
+  box-shadow:0 18px 44px -38px rgba(28,35,32,.5);}
+.widget-head{display:flex;align-items:center;justify-content:space-between;}
+.live{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:.64rem;color:var(--muted);}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--green);font-style:normal;animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+.field-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:7px;}
+.seg{display:flex;gap:8px;flex-wrap:wrap;}
+.seg button{font-family:var(--mono);font-size:.8rem;padding:8px 13px;border-radius:8px;border:1px solid var(--line);background:var(--white);color:var(--body2);transition:.15s;}
+.seg button.on{background:var(--green);border-color:var(--green);color:#F8F7F2;}
+.seg.amber button.on{background:var(--amber);border-color:var(--amber);}
+.live-card{border:1px solid var(--line2);border-radius:12px;padding:15px;background:var(--white);transition:border-color .25s;}
+.lc-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:9px;}
+.pill{font-family:var(--mono);font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:5px;background:var(--green-tint);color:var(--green);}
+.pill.amber{background:var(--amber-tint);color:var(--amber);}
+.repo{font-family:var(--mono);font-size:.78rem;color:var(--body2);}
+.matchpill{margin-left:auto;font-family:var(--mono);font-size:.7rem;color:var(--green);background:var(--green-tint);border-radius:6px;padding:4px 10px;}
+.matchpill.amber{color:var(--amber);background:var(--amber-tint);}
+.live-card h4{font-weight:600;font-size:1rem;line-height:1.3;}
+.live-card .why{margin:8px 0 0;font-size:.86rem;line-height:1.45;color:var(--body2);}
+.meter{margin-top:12px;}
+.meter .ml{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:5px;}
+.meter .ml span:first-child{font-family:var(--mono);font-size:.56rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.meter .ml span:last-child{font-size:.78rem;color:var(--body);text-align:right;}
+.track{display:block;height:6px;background:#E9E7DB;border-radius:3px;overflow:hidden;}
+.track i{display:block;height:100%;border-radius:3px;background:var(--green);font-style:normal;transition:width .45s cubic-bezier(.2,.7,.3,1);}
+.warn{margin-top:11px;font-size:.8rem;line-height:1.4;color:var(--amber-deep);background:var(--amber-tint);border:1px solid var(--amber-line);border-radius:8px;padding:9px 12px;}
+
+/* ---- fork ---- */
+.fork-head{max-width:62ch;}
+.fork-head h2{font-weight:800;font-size:clamp(1.9rem,3.6vw,2.9rem);line-height:1.04;margin:14px 0 0;}
+.fork-head p{margin:16px 0 0;font-size:1.04rem;line-height:1.55;color:var(--body2);max-width:54ch;}
+.fork{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:var(--gap);}
+.choice{text-align:left;background:var(--raised);border:1px solid var(--line);border-radius:15px;padding:clamp(18px,2.6vh,26px);display:flex;flex-direction:column;gap:var(--gap-s);transition:.2s;}
+.choice:hover{border-color:var(--green);box-shadow:0 0 0 3px var(--green-tint);transform:translateY(-2px);}
+.choice.amber:hover{border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-tint);}
+.choice .top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.choice .ico{width:40px;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:800;font-size:1.2rem;background:var(--green);color:#F8F7F2;}
+.choice.amber .ico{background:var(--amber-tint);color:var(--amber);}
+.choice .tg{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--green);text-align:right;}
+.choice.amber .tg{color:var(--amber);}
+.choice h3{font-weight:700;font-size:clamp(1.2rem,2vw,1.5rem);}
+.choice p{font-size:.96rem;line-height:1.48;color:var(--body);}
+.choice .go{margin-top:2px;font-family:var(--mono);font-size:.8rem;color:var(--green);}
+.choice.amber .go{color:var(--amber);}
+.fork-foot{margin-top:var(--gap);}
+.panel.top{margin-block:clamp(8px,2vh,30px) auto;}
+
+/* tuned chip */
+.tunedfor{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:var(--gap);}
+.tunedfor .chip{display:inline-flex;align-items:center;gap:8px;background:var(--green-tint);border:1px solid var(--green);border-radius:20px;padding:6px 14px;font-family:var(--mono);font-size:.74rem;color:var(--green);}
+.tunedfor.amber .chip{background:var(--amber-tint);border-color:var(--amber);color:var(--amber);}
+.tunedfor .chip i{width:7px;height:7px;border-radius:50%;background:var(--green);font-style:normal;}
+.tunedfor.amber .chip i{background:var(--amber);}
+.chip.plain{background:var(--raised);border-color:var(--line);color:var(--ink);}
+.chip.plain .eyebrow{color:var(--muted);}
+
+/* contribution grid */
+.head-block h2{font-weight:800;font-size:clamp(1.6rem,2.8vw,2.3rem);line-height:1.05;margin:10px 0 0;}
+.head-block p{margin:11px 0 0;font-size:1.02rem;line-height:1.5;color:var(--body2);max-width:58ch;}
+.tilegrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:var(--gap);}
+.tile{text-align:left;background:var(--raised);border:1px solid var(--line);border-radius:13px;padding:clamp(14px,1.8vh,18px);display:flex;flex-direction:column;gap:9px;min-height:0;transition:.18s;}
+.tile:hover{border-color:var(--green);}
+.tile.on{background:var(--green-tint);border-color:var(--green);box-shadow:0 0 0 3px var(--green-tint);}
+.tile.amon{background:var(--amber-tint);border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-tint);}
+.tile h3{font-weight:700;font-size:1.04rem;}
+.tile p{font-size:.86rem;line-height:1.4;color:var(--body);flex:1;}
+.tile .state{font-family:var(--mono);font-size:.66rem;letter-spacing:.08em;color:var(--muted);}
+.tile.on .state{color:var(--green);}
+.tile.amon .state{color:var(--amber);}
+
+/* profile */
+.field{margin-top:var(--gap-s);}
+.field:first-child{margin-top:0;}
+.combo{display:flex;align-items:center;gap:10px;border:1px solid var(--line);background:var(--white);border-radius:10px;padding:10px 13px;position:relative;}
+.combo input{border:none;outline:none;background:none;font-family:var(--sans);font-size:.96rem;color:var(--ink);flex:1;min-width:60px;}
+.combo svg{flex:none;}
+.suggest{position:absolute;left:0;right:0;top:calc(100% + 6px);background:var(--white);border:1px solid var(--line);border-radius:10px;overflow:hidden;z-index:10;box-shadow:0 18px 40px -28px rgba(28,35,32,.5);}
+.suggest button{display:flex;width:100%;justify-content:space-between;align-items:center;text-align:left;padding:10px 13px;border:none;background:var(--raised);font-family:var(--mono);font-size:.84rem;color:var(--body2);border-bottom:1px solid #EDEBE2;}
+.suggest button:last-child{border-bottom:none;}
+.suggest button:hover,.suggest button.cursor{background:var(--green-tint);color:var(--green-deep);}
+.suggest .addhint{font-size:.72rem;color:var(--green);visibility:hidden;}
+.suggest button.cursor .addhint{visibility:visible;}
+.tags{margin-top:9px;display:flex;flex-wrap:wrap;gap:7px;}
+.tags:empty{display:none;}
+.tagx{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.8rem;background:var(--green);color:#F8F7F2;border:none;border-radius:8px;padding:6px 8px 6px 12px;}
+.tagx.amber{background:var(--amber);}
+.tagx i{width:15px;height:15px;border-radius:5px;background:rgba(255,255,255,.18);display:inline-flex;align-items:center;justify-content:center;font-size:.68rem;font-style:normal;}
+.hint{margin-top:8px;font-size:.8rem;color:var(--muted);line-height:1.45;}
+.sizes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:9px;}
+.size{text-align:left;background:var(--raised);border:1px solid var(--line);border-radius:11px;padding:13px;transition:.15s;}
+.size:hover{border-color:var(--green);}
+.size.on{background:var(--green-tint);border-color:var(--green);box-shadow:0 0 0 3px var(--green-tint);}
+.size.amon{background:var(--amber-tint);border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-tint);}
+.size.dim{opacity:.55;}
+.size .t{font-family:var(--disp);font-weight:600;font-size:.98rem;}
+.size .d{font-size:.82rem;color:var(--body2);margin-top:3px;line-height:1.4;}
+.optional{margin-top:var(--gap-s);border-top:1px dashed var(--line);padding-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.optional .txt{font-size:.9rem;color:var(--muted);}
+.optional .add{font-family:var(--mono);font-size:.76rem;color:var(--body2);background:var(--raised);border:1px dashed var(--line);border-radius:20px;padding:7px 13px;}
+
+/* primary signal (late, lives in the rail) */
+.primary-signal{margin-top:var(--gap);background:var(--amber-tint);border:1px solid var(--amber);border-radius:13px;padding:clamp(14px,2vh,20px);}
+.ps-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+.ps-head .badge{font-family:var(--mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);background:var(--raised);border:1px solid var(--amber);border-radius:5px;padding:4px 9px;}
+.ps-head .ttl{font-family:var(--disp);font-weight:600;font-size:1rem;color:var(--amber-deep);}
+.checks{display:flex;flex-wrap:wrap;gap:8px;}
+.check{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.8rem;border-radius:9px;padding:7px 12px;background:var(--white);border:1px solid var(--amber-line);color:#7A5824;transition:.15s;}
+.check i{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--amber-line);display:inline-block;}
+.check.on{background:var(--white);border-color:var(--amber);color:var(--amber-deep);}
+.check.on i{background:var(--amber);border-color:var(--amber);color:#F8F7F2;display:inline-flex;align-items:center;justify-content:center;font-size:.62rem;}
+.check.add{border-style:dashed;background:#FCF8F0;}
+.tray{margin-top:12px;border-top:1px dashed var(--amber-line);padding-top:11px;}
+.tray .lab{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);}
+
+/* single-column profile heading + change pill */
+.ptitle{font-weight:700;font-size:clamp(1.7rem,2.8vw,2.1rem);line-height:1.08;margin:10px 0 0;}
+.psub{margin:10px 0 0;font-size:1rem;color:var(--body2);line-height:1.5;max-width:66ch;}
+.changepill{font-family:var(--mono);font-size:.72rem;color:var(--green);background:var(--green-tint);border:none;border-radius:14px;padding:5px 12px;cursor:pointer;}
+.changepill.amber{color:var(--amber);background:var(--amber-tint);}
+/* chrome right-side progress pips */
+.cright{margin-left:auto;display:flex;align-items:center;}
+.cpips{display:flex;gap:6px;align-items:center;}
+.cp{width:7px;height:7px;border-radius:20px;background:var(--line);}
+.cp.on{width:22px;background:var(--green);}
+.cpips.amber .cp.on{background:var(--amber);}
+/* "add your own" verifiable org typeahead (image 3) */
+.orgbox{margin-top:10px;border:1px solid var(--line);border-radius:12px;background:var(--raised);overflow:hidden;}
+.orgfield{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--white);border-bottom:1px solid var(--line2);}
+.orgfield input{flex:1;border:none;outline:none;background:none;font-family:var(--sans);font-size:.96rem;color:var(--ink);}
+.orgcount{font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;}
+.orglist{display:flex;flex-direction:column;}
+.orgrow{display:flex;align-items:center;gap:12px;text-align:left;border:none;background:var(--raised);padding:11px 14px;border-bottom:1px solid #EDEBE2;transition:.12s;}
+.orgrow:last-child{border-bottom:none;}
+.orgrow:hover,.orgrow.cursor{background:var(--amber-tint);}
+.ava{flex:none;width:30px;height:30px;border-radius:7px;background:#E6E3D8;color:var(--muted2);display:inline-flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:700;font-size:.86rem;}
+.ava.dash{background:none;border:1px dashed var(--amber-line);color:var(--amber);}
+.oname{font-family:var(--sans);font-weight:600;font-size:.92rem;color:var(--ink);}
+.ohandle{font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-top:1px;}
+.orow-r{margin-left:auto;}
+.vbadge{font-family:var(--mono);font-size:.66rem;color:var(--green-deep);background:var(--green-tint);border-radius:6px;padding:4px 9px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;}
+.addlink{font-family:var(--mono);font-size:.74rem;color:var(--amber);}
+.orgrow.custom{align-items:flex-start;}
+.osub{font-family:var(--mono);font-size:.68rem;color:var(--muted);line-height:1.4;margin-top:2px;}
+
+/* preview */
+.bullets{display:flex;flex-direction:column;gap:var(--gap-s);margin-top:var(--gap);}
+.bullets .b{display:flex;gap:13px;align-items:flex-start;}
+.bullets .b i{flex:none;margin-top:1px;font-family:var(--mono);color:var(--green);font-weight:600;font-style:normal;}
+.amber .bullets .b i{color:var(--amber);}
+.bullets .b span{font-size:1rem;color:var(--ink);line-height:1.42;}
+.assure{margin-top:var(--gap);border-radius:12px;padding:16px 18px;font-size:1rem;font-weight:500;line-height:1.45;background:var(--green-tint);border:1px solid var(--green);color:var(--green-deep);}
+.amber .assure{background:var(--amber-tint);border-color:var(--amber);color:var(--amber-deep);}
+
+/* results: detail pane + selectable list */
+.res-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:clamp(20px,2.5vw,36px);align-items:start;min-height:0;}
+.detail{background:var(--raised);border:1px solid var(--line);border-radius:14px;padding:clamp(18px,2.6vh,26px);box-shadow:0 24px 56px -46px rgba(28,35,32,.5);align-self:start;position:sticky;top:0;}
+.detail.amber{border-color:var(--line);box-shadow:0 24px 56px -46px rgba(28,35,32,.5);}
+.detail h3{font-weight:600;font-size:1.16rem;line-height:1.3;margin-top:4px;}
+.whybox{margin-top:10px;font-size:.95rem;color:var(--ink);background:var(--white);border-left:2px solid var(--green);padding:10px 13px;border-radius:0 7px 7px 0;line-height:1.45;}
+.detail.amber .whybox{border-left-color:var(--amber);}
+.whybox .lab,.signals .lab{font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;}
+.signals{margin-top:11px;}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:8px;}
+.sig{border:1px solid var(--green);background:var(--green-tint);border-radius:11px;padding:11px 13px;}
+.detail.amber .sig{border-color:var(--amber);background:var(--amber-tint);}
+.sig .sh{display:flex;justify-content:space-between;align-items:center;}
+.sig .sh span{font-family:var(--mono);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--green);}
+.detail.amber .sig .sh span{color:var(--amber);}
+.dots{display:flex;gap:4px;}
+.dots i{width:7px;height:7px;border-radius:50%;background:#9DBBAE;font-style:normal;}
+.detail.amber .dots i{background:#D8C39B;}
+.dots i.f{background:var(--green);}
+.detail.amber .dots i.f{background:var(--amber);}
+.sig .sv{margin-top:6px;font-size:.9rem;color:var(--green-deep);font-weight:500;line-height:1.32;}
+.detail.amber .sig .sv{color:var(--amber-deep);}
+.fitbreak{margin-top:11px;}
+.fitbreak .fh{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.fitbreak .fh b{color:var(--ink);font-weight:600;}
+.frow{display:grid;grid-template-columns:80px 1fr;gap:9px;align-items:center;margin-bottom:6px;}
+.frow span{font-family:var(--mono);font-size:.7rem;color:var(--body2);}
+.frow .ft{height:6px;background:#D8D6CA;border-radius:3px;overflow:hidden;}
+.frow .ft i{display:block;height:100%;border-radius:3px;background:var(--green);font-style:normal;transition:width .5s;}
+.detail.amber .frow .ft i{background:var(--amber);}
+.rcta{margin-top:11px;display:flex;flex-wrap:wrap;gap:8px;}
+.chiplink{font-family:var(--mono);font-size:.76rem;background:var(--raised);color:var(--body2);border:1px solid var(--line);border-radius:8px;padding:8px 13px;}
+.chiplink.solid{background:var(--green);color:#F8F7F2;border-color:var(--green);}
+.detail.amber .chiplink.solid{background:var(--amber);border-color:var(--amber);}
+.healthline{margin-top:10px;font-family:var(--mono);font-size:.72rem;color:var(--muted);line-height:1.45;}
+.loadwrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:clamp(30px,8vh,90px) 0;}
+.loadwrap .ptitle,.loadwrap .psub{margin-left:auto;margin-right:auto;}
+.errwrap{max-width:58ch;}
+.spin{width:34px;height:34px;border-radius:50%;border:3px solid var(--line2);border-top-color:var(--green);animation:spin .9s linear infinite;}
+.amberui .spin{border-top-color:var(--amber);}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loadmsg{min-height:1.4em;transition:opacity .3s;}
+.loadsteps{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:2px;}
+.ls{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 12px;transition:.35s;}
+.ls.on{color:var(--green-deep);border-color:var(--green);background:var(--green-tint);}
+.amberui .ls.on{color:var(--amber-deep);border-color:var(--amber);background:var(--amber-tint);}
+
+.rlist{display:flex;flex-direction:column;gap:12px;min-width:0;}
+.rscroll{display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:calc(100vh - 210px);padding-right:8px;scrollbar-width:thin;scrollbar-color:#BFC2B6 transparent;}
+.rscroll::-webkit-scrollbar{width:10px;}
+.rscroll::-webkit-scrollbar-track{background:transparent;}
+.rscroll::-webkit-scrollbar-thumb{background:#BFC2B6;border-radius:8px;border:3px solid transparent;background-clip:padding-box;}
+.rscroll::-webkit-scrollbar-thumb:hover{background:#A6A99C;background-clip:padding-box;}
+.amberui .rscroll{scrollbar-color:#D3BC8E transparent;}
+.amberui .rscroll::-webkit-scrollbar-thumb{background:#D3BC8E;background-clip:padding-box;}
+.rescount{font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-bottom:10px;letter-spacing:.02em;}
+.rrow{text-align:left;background:var(--raised);border:1px solid var(--line);border-radius:13px;padding:14px 16px;display:flex;flex-direction:column;gap:7px;transition:.15s;}
+.rrow:hover{border-color:var(--green);}
+.amberui .rrow:hover{border-color:var(--amber);}
+.rrow.sel{border-color:var(--green);background:var(--green-tint);box-shadow:0 0 0 2px var(--green-tint);}
+.amberui .rrow.sel{border-color:var(--amber);background:var(--amber-tint);box-shadow:0 0 0 2px var(--amber-tint);}
+.rrow .t1{display:flex;align-items:center;gap:9px;}
+.rrow .rk{font-family:var(--mono);font-size:.72rem;color:var(--muted);}
+.rrow .t2{font-size:.98rem;color:var(--ink);line-height:1.3;font-weight:600;}
+
+@media(max-width:880px){
+  body{overflow:auto;}
+  .split,.res-split{grid-template-columns:1fr;}
+  .tilegrid{grid-template-columns:repeat(2,1fr);}
+  .pad{overflow:visible;}
+  .detail{position:static;max-height:none;overflow:visible;}
+  .rscroll{max-height:none;overflow:visible;padding-right:0;}
+}
+@media(max-width:480px){ .fork{grid-template-columns:1fr;} .tilegrid{grid-template-columns:1fr;} .sizes{grid-template-columns:1fr;} }
+@media(prefers-reduced-motion:reduce){ *{animation-duration:.001ms !important;transition-duration:.001ms !important;} }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar" id="topbar">
+    <span class="brand" id="brand" role="button" tabindex="0" aria-label="IssueScout home">Issue<span>Scout</span></span>
+    <span class="tag">field guide to open source</span>
+    <span class="steps" id="steps"></span>
+  </div>
+  <div id="root"></div>
+</div>
+
+<script>
+/* ============================================================
+   IssueScout - onboarding + deterministic results.
+   Intelligence lives in plain rules (score()). Text only
+   narrates pre-computed values; no model decides ranking.
+   ============================================================ */
+const STAGES = {
+  start:  { key:'start',  label:"I'm getting started", short:'1st-2nd yr', accent:'green' },
+  signal: { key:'signal', label:"I'm building signal", short:'final yr', accent:'amber' }
+};
+const CONTRIB = [
+  {id:'code',t:'Code',d:'Fix bugs, build features, sharpen performance.'},
+  {id:'design',t:'Design & UX',d:'UI, polish, prototypes, design systems.'},
+  {id:'docs',t:'Writing & docs',d:'Guides, API docs, tutorials, READMEs.'},
+  {id:'i18n',t:'Translation',d:'Localize software into more languages.'},
+  {id:'data',t:'Data & research',d:'Datasets, analysis, visualizations.'},
+  {id:'community',t:'Community',d:'Triage, answer questions, mentor.'},
+  {id:'a11y',t:'Accessibility',d:'Audits, fixes, inclusive design.'},
+  {id:'devops',t:'DevOps & infra',d:'CI, builds, packaging, releases.'}
+];
+const LANGS = ['Python','JavaScript','TypeScript','Go','Rust','Java','C++','C#','Ruby','PHP','Swift','Kotlin','C','Scala','Elixir','Dart'];
+// What the first profile question should be for each contribution path.
+// kind 'langs' => programming languages (sent to the backend as GitHub
+// language filters); kind 'skills' => path-specific skills/human languages
+// (shown for fit, not used as GitHub language filters). show:false => the
+// path has no meaningful "skills" question, so we skip straight to interests.
+const PATH_SKILL = {
+  code:    {show:true,  kind:'langs',  label:"Languages you're comfortable in", ph:'Type to add: Python, Go, Rust...', hint:'Pick from suggestions or add your own, and they stack up as tags you can remove.', sugg:LANGS},
+  devops:  {show:true,  kind:'langs',  label:"Languages & tools you know", ph:'Type to add: Go, Bash, YAML...', hint:'Pick from suggestions or add your own.', sugg:['Go','Python','Bash','Shell','YAML','Docker','Kubernetes','Terraform','Ansible','Make']},
+  data:    {show:true,  kind:'langs',  label:"Languages & tools you work in", ph:'Type to add: Python, R, SQL...', hint:'Pick from suggestions or add your own.', sugg:['Python','R','SQL','Julia','Scala','Pandas','NumPy','Jupyter']},
+  design:  {show:true,  kind:'skills', label:"Design tools & skills (optional)", ph:'Type to add: Figma, CSS, UI design...', hint:'Optional. Helps match design and UI work.', sugg:['Figma','Sketch','CSS','HTML','UI design','UX research','Prototyping','Design systems','Illustration']},
+  i18n:    {show:true,  kind:'skills', label:"Languages you can translate into", ph:'Type to add: Spanish, French, Hindi...', hint:'The human languages you can localize into.', sugg:['Spanish','French','German','Hindi','Mandarin','Arabic','Portuguese','Japanese','Russian','Bengali','Italian','Korean']},
+  a11y:    {show:true,  kind:'skills', label:"Relevant skills (optional)", ph:'Type to add: HTML, ARIA, WCAG...', hint:'Optional. Helps match accessibility work.', sugg:['HTML','CSS','ARIA','WCAG','Screen readers','Keyboard nav','Color contrast']},
+  docs:    {show:false},
+  community:{show:false},
+};
+function pathSkill(){ return PATH_SKILL[P.contrib] || PATH_SKILL.code; }
+const INTERESTS = ['developer tooling','web frameworks','distributed systems','machine learning','infrastructure','databases','data visualization','security','climate','education','maps','APIs','CLI tools','game dev'];
+const COMPANY_SHORTLIST = ['Microsoft','Google','Vercel','HashiCorp','Mozilla','Netflix','Meta','Stripe','Shopify'];
+const ORG_INDEX = [
+  {name:'Microsoft',handle:'microsoft',verified:true},{name:'Google',handle:'google',verified:true},
+  {name:'Vercel',handle:'vercel',verified:true},{name:'HashiCorp',handle:'hashicorp',verified:true},
+  {name:'Mozilla',handle:'mozilla',verified:true},{name:'Netflix',handle:'Netflix',verified:true},
+  {name:'Meta',handle:'facebook',verified:true},{name:'Stripe',handle:'stripe',verified:true},
+  {name:'Shopify',handle:'Shopify',verified:true},{name:'Supabase',handle:'supabase',verified:true},
+  {name:'Apache Superset',handle:'apache',sub:'superset',verified:false},{name:'Grafana Labs',handle:'grafana',verified:true},
+  {name:'Elastic',handle:'elastic',verified:true},{name:'Hugging Face',handle:'huggingface',verified:true},
+  {name:'PostgreSQL',handle:'postgres',verified:false},{name:'Prisma',handle:'prisma',verified:true},
+  {name:'Supabase Community',handle:'supabase-community',verified:false},{name:'Apache Airflow',handle:'apache',sub:'airflow',verified:false}
+];
+
+const ISSUES = [
+  {id:1,repo:'pallets/flask',org:'Pallets',langs:['Python'],topics:['web frameworks','APIs'],size:'docs',gfi:true,respDays:2,docs:0.95,health:0.92},
+  {id:2,repo:'microsoft/vscode',org:'Microsoft',langs:['TypeScript','JavaScript'],topics:['developer tooling'],size:'feature',gfi:false,respDays:5,docs:0.88,health:0.96},
+  {id:3,repo:'vercel/next.js',org:'Vercel',langs:['TypeScript','JavaScript'],topics:['web frameworks','developer tooling'],size:'small',gfi:true,respDays:3,docs:0.82,health:0.9},
+  {id:4,repo:'rust-lang/mdBook',org:'Rust',langs:['Rust'],topics:['developer tooling','CLI tools'],size:'small',gfi:true,respDays:4,docs:0.8,health:0.85},
+  {id:5,repo:'google/jax',org:'Google',langs:['Python'],topics:['machine learning'],size:'hard',gfi:false,respDays:6,docs:0.7,health:0.88},
+  {id:6,repo:'mozilla/pdf.js',org:'Mozilla',langs:['JavaScript'],topics:['web frameworks'],size:'feature',gfi:false,respDays:5,docs:0.78,health:0.84},
+  {id:7,repo:'pandas-dev/pandas',org:'NumFOCUS',langs:['Python'],topics:['data visualization','databases'],size:'docs',gfi:true,respDays:3,docs:0.9,health:0.93},
+  {id:8,repo:'hashicorp/terraform',org:'HashiCorp',langs:['Go'],topics:['infrastructure','developer tooling'],size:'feature',gfi:false,respDays:7,docs:0.75,health:0.82},
+  {id:9,repo:'archived/cli-helper',org:'(archived)',langs:['Python'],topics:['CLI tools'],size:'docs',gfi:true,respDays:240,docs:0.2,health:0.18}
+];
+const TITLES = {
+  1:'Document a confusing blueprint registration case',2:'Improve error messaging in the extension host',
+  3:'Clarify a confusing routing edge case in the docs',4:'Fix a broken anchor link in the rendered book',
+  5:'Optimise a slow path in the autodiff core',6:'Handle a malformed annotation gracefully',
+  7:'Tidy a misleading example in the merge guide',8:'Improve a provider validation error message'
+};
+
+/* ---- deterministic scorer ---- */
+function score(issue,p){
+  const langHit = p.langs.length ? (issue.langs.some(l=>p.langs.includes(l))?1:0.15) : 0.6;
+  const intHit  = p.interests.length ? (issue.topics.some(t=>p.interests.includes(t))?1:0.25) : 0.6;
+  const health  = issue.health;
+  const companyHit = (p.companies&&p.companies.length) ? (p.companies.some(c=>c.toLowerCase()===issue.org.toLowerCase())?1:0) : 0;
+  let stageFit;
+  if(p.stage==='start'){
+    const sizeFit = (issue.size==='docs'||issue.size==='small')?1:(issue.size==='feature'?0.4:0.1);
+    const respFit = issue.respDays<=4?1:(issue.respDays<=14?0.5:0.05);
+    stageFit = sizeFit*0.55 + respFit*0.45;
+  } else {
+    stageFit = (issue.size==='feature'||issue.size==='hard')?1:(issue.size==='small'?0.45:0.2);
+  }
+  let total,parts;
+  if(p.stage==='start'){
+    total = langHit*0.25 + stageFit*0.30 + health*0.30 + intHit*0.15;
+    parts = {skill:langHit,stage:stageFit,health,interest:intHit,company:0};
+  } else {
+    total = companyHit*0.40 + langHit*0.20 + intHit*0.20 + health*0.10 + stageFit*0.10;
+    parts = {skill:langHit,stage:stageFit,health,interest:intHit,company:companyHit};
+  }
+  return {issue,total,parts};
+}
+function narrate(r,p){
+  const i=r.issue;
+  if(p.stage==='start'){
+    const sizeWord = i.size==='docs'?'a documentation fix':i.size==='small'?'a small, contained change':'larger than a first task should be';
+    const resp = i.respDays<=4?`the repo is active and replies to newcomers in ~${i.respDays} days`:`replies can take ${i.respDays>30?'months':'over a week'}`;
+    return `It's ${sizeWord}, and ${resp}. ${i.health>0.7?"You won't be stepping into a mess.":"Worth a look, but the repo runs slow."}`;
+  }
+  const tgt = r.parts.company?`Inside ${i.org}, a target you named, and `:`In ${i.org}, and `;
+  const sub = i.size==='hard'?'a high-credibility, deep problem':i.size==='feature'?'substantial enough to cite':'lighter than ideal for signal';
+  return `${tgt}${sub}. Maintainers reply in ~${i.respDays} days, a real bar to clear, and the work reads well on a CV.`;
+}
+
+/* ---- state ---- */
+let P = {stage:null,contrib:'code',langs:[],skills:[],interests:[],companies:[],size:null};
+let view='welcome';
+let live={stage:'start',stack:'Python'};
+let lastRanked=[], sel=0;
+let earlyCompaniesOpen=false, addCustomOpen=false, justOpenedOrg=false;
+let results=null, loading=false, resultsError=null;
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function buildAns(){
+  const sizeMap={docs:'docs',small:'bug',feature:'feature',hard:'hard'};
+  const codeLike=['code','data','devops'].includes(P.contrib);
+  return { stage:P.stage==='signal'?'late':'early',
+           langs: codeLike?P.langs.slice():[],
+           topics:P.interests.slice(), interests:'',
+           taskSize:sizeMap[P.size]||'', targets:P.companies.slice(),
+           contrib:P.contrib, skills:P.skills.slice() };
+}
+const LOAD_MSGS=[
+  "Searching your target companies and languages\u2026",
+  "Pulling open, unassigned issues from GitHub\u2026",
+  "Checking which repos are healthy and active\u2026",
+  "Reading how fast maintainers respond\u2026",
+  "Scoring each issue against your profile\u2026",
+  "Ranking your best-fit matches\u2026"
+];
+let loadTimer=null;
+function startLoadCycle(){
+  stopLoadCycle();
+  let i=0;
+  loadTimer=setInterval(()=>{
+    i++;
+    const el=document.getElementById('loadmsg');
+    if(el){ el.style.opacity=0;
+      setTimeout(()=>{ el.textContent=LOAD_MSGS[Math.min(i,LOAD_MSGS.length-1)]; el.style.opacity=1; },180); }
+    const pips=[...document.querySelectorAll('#loadsteps .ls')];
+    if(pips.length){ const active=Math.min(Math.floor(i*pips.length/LOAD_MSGS.length),pips.length-1);
+      pips.forEach((p,k)=>p.classList.toggle('on',k<=active)); }
+  },1600);
+}
+function stopLoadCycle(){ if(loadTimer){ clearInterval(loadTimer); loadTimer=null; } }
+
+function runMatch(){
+  view='results'; loading=true; results=null; resultsError=null; sel=0; render(); startLoadCycle();
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>ctrl.abort(), 75000);
+  fetch('/api/match',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(buildAns()),signal:ctrl.signal})
+    .then(r=>r.json())
+    .then(d=>{ clearTimeout(timer); stopLoadCycle(); loading=false; if(d&&d.ok){ results=d; } else { resultsError=(d&&d.message)||'Something went wrong.'; } if(view==='results') render(); })
+    .catch(e=>{ clearTimeout(timer); stopLoadCycle(); loading=false;
+      resultsError=(e&&e.name==='AbortError')
+        ? 'That search took too long, likely GitHub rate limits. Try fewer languages, topics, or target companies, and try again in a minute.'
+        : 'Could not reach the IssueScout server. Start it with: python server.py';
+      if(view==='results') render(); });
+}
+
+const root=document.getElementById('root');
+function go(v){ view=v; if(v==='results') sel=0; render(); }
+function render(){
+  setSteps();
+  root.innerHTML =
+    view==='welcome'?welcomeView():
+    view==='fork'?forkView():
+    view==='contrib'?contribView():
+    view==='profile'?profileView():
+    view==='preview'?previewView():
+    resultsView();
+  wire();
+}
+function setSteps(){
+  const order=['fork','contrib','profile','preview','results'], idx=order.indexOf(view);
+  document.getElementById('topbar').className='topbar'+(P.stage==='signal'?' amber':'');
+  const steps=document.getElementById('steps');
+  steps.innerHTML = idx<0?'':order.map((_,k)=>`<span class="pip ${k<=idx?'on':''}"></span>`).join('');
+}
+const chromeBar=(url,stat,right)=>`<div class="chrome">${url?`<span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="url">${url}</span>`:''}${stat?`<span class="stat">${stat}</span>`:''}${right?`<span class="cright">${right}</span>`:''}</div>`;
+const lanePips=(am)=>`<span class="cpips ${am?'amber':''}"><span class="cp on"></span><span class="cp"></span><span class="cp"></span></span>`;
+
+/* ---------- WELCOME ---------- */
+function welcomeView(){
+  return `<div class="screen"><div class="card">${chromeBar('issuescout.dev')}
+    <div class="pad"><div class="panel split">
+      <div class="rail">
+        <span class="eyebrow">Open source, matched to you</span>
+        <h2 style="font-size:clamp(2rem,3.6vw,3rem)">Find an issue actually worth your <em>evening.</em></h2>
+        <p>Most "good first issues" are dead ends: abandoned repos, maintainers who never reply. IssueScout ranks the ones that fit your skills <i>and</i> answer newcomers, then says plainly why each made the list.</p>
+        <div class="cta-row">
+          <button class="btn" data-go="fork">Find my first issue <span>&rarr;</span></button>
+          <span class="note">~1 min &middot; no account</span>
+        </div>
+        <p class="note foot">Ranked by rules you can read: skill match, issue size, repo health, target orgs. No black box.</p>
+      </div>
+      <div class="widget" id="widget">
+        <div class="widget-head"><span class="field-label" style="margin:0">Try it &middot; tune and watch</span><span class="live"><i></i>live</span></div>
+        <div><span class="field-label">Where are you?</span>
+          <div class="seg ${live.stage==='signal'?'amber':''}">
+            <button data-live-stage="start" class="${live.stage==='start'?'on':''}">Getting started</button>
+            <button data-live-stage="signal" class="${live.stage==='signal'?'on':''}">Building signal</button>
+          </div></div>
+        <div><span class="field-label">Your stack</span>
+          <div class="seg ${live.stage==='signal'?'amber':''}">
+            ${['Python','TypeScript','Rust'].map(s=>`<button data-live-stack="${s}" class="${live.stack===s?'on':''}">${s}</button>`).join('')}
+          </div></div>
+        <div id="livecard">${liveCard(live.stage,live.stack)}</div>
+        <span class="note">Re-ranked instantly from rules you can read, not a model.</span>
+      </div>
+    </div></div></div></div>`;
+}
+function liveCard(stage,stack){
+  const p={stage,contrib:'code',langs:[stack],interests:[],companies:[],size:null};
+  const r=ISSUES.map(i=>score(i,p)).sort((a,b)=>b.total-a.total)[0];
+  const i=r.issue, am=stage==='signal';
+  const col=am?'var(--amber)':'var(--green)', tint=am?'var(--amber-tint)':'var(--green-tint)';
+  const respPct=i.respDays<=2?92:i.respDays<=4?78:i.respDays<=7?60:20, docsPct=Math.round(i.docs*100);
+  const weak=i.health<0.4;
+  return `<div class="live-card" style="border-color:${weak?'var(--amber-line)':'var(--line2)'}">
+    <div class="lc-row"><span class="pill" style="background:${tint};color:${col}">${i.gfi?'good first issue':(am?'substantial':'intermediate')}</span>
+      <span class="repo">${i.repo}</span>
+      <span class="matchpill" style="background:${tint};color:${col}">${am?'goal fit':'fit'} ${Math.round(r.total*100)}%</span></div>
+    <h4>${am?'Improve error handling in the core API':(i.size==='docs'?'Clarify a confusing setup step in the docs':'A small, contained fix')}</h4>
+    <p class="why">${narrate(r,p)}</p>
+    <div class="meter"><div class="ml"><span>Responsiveness</span><span>Replies in ~${i.respDays} days</span></div><span class="track"><i style="width:${respPct}%;background:${col}"></i></span></div>
+    <div class="meter"><div class="ml"><span>Documentation</span><span>${i.docs>0.85?'Clear and organised':i.docs>0.6?'Dense but thorough':'Sparse'}</span></div><span class="track"><i style="width:${docsPct}%;background:${col}"></i></span></div>
+    ${weak?`<div class="warn">Heads up: this repo looks abandoned. The scorer pushed it down for you.</div>`:''}
+  </div>`;
+}
+
+/* ---------- FORK ---------- */
+function forkView(){
+  return `<div class="screen"><div class="card green">${chromeBar('issuescout.dev/start')}
+    <div class="pad"><div class="panel top">
+      <div class="fork-head"><span class="eyebrow">First, where are you?</span>
+        <h2>Let's tune IssueScout to you.</h2>
+        <p>Your reason for being here changes what "a good issue" even means. Pick the one that sounds like you.</p></div>
+      <div class="fork">
+        <button class="choice" data-stage="start">
+          <div class="top"><span class="ico">&#8627;</span><span class="tg">1st-2nd year &middot; little / no OSS</span></div>
+          <h3>I'm getting started</h3>
+          <p>Learn, build a portfolio, and land one merged PR without burning a weekend on a dead repo or being ignored.</p>
+          <span class="go">Tune for a first win &rarr;</span></button>
+        <button class="choice amber" data-stage="signal">
+          <div class="top"><span class="ico">&#8599;</span><span class="tg">final year &middot; merged PRs &middot; placements</span></div>
+          <h3>I'm building signal</h3>
+          <p>Substantial issues inside companies you're targeting. Contributions worth putting in front of a recruiter.</p>
+          <span class="go">Tune for relevance &rarr;</span></button>
+      </div>
+      <p class="note fork-foot">Not sure? Pick the closer one. You can switch paths any time.</p>
+    </div></div></div></div>`;
+}
+
+/* ---------- CONTRIBUTION ---------- */
+function contribView(){
+  const st=STAGES[P.stage], am=P.stage==='signal';
+  return `<div class="screen"><div class="card">${chromeBar('issuescout.dev/start')}
+    <div class="pad"><div class="panel">
+      <div class="tunedfor ${am?'amber':''}"><span class="eyebrow">Tuned for</span>
+        <span class="chip"><i></i>${st.label} &middot; ${st.short}</span>
+        <button class="linklike" data-go="fork">change stage</button></div>
+      <div class="head-block"><span class="eyebrow">First question</span>
+        <h2>How do you want to contribute?</h2>
+        <p>Open source isn't only code. Pick the kind of work you want. One choice; change it any time.</p></div>
+      <div class="tilegrid">
+        ${CONTRIB.map(c=>`<button class="tile ${P.contrib===c.id?(am?'amon':'on'):''}" data-contrib="${c.id}">
+          <h3>${c.t}</h3><p>${c.d}</p>
+          <span class="state">${P.contrib===c.id?'SELECTED &#10003;':'CHOOSE &rarr;'}</span></button>`).join('')}
+      </div>
+      <div class="actions"><button class="btn ${am?'amber':''}" data-go="profile">Continue &rarr;</button>
+        <button class="linklike" data-go="fork">&larr; Back</button></div>
+    </div></div></div></div>`;
+}
+
+/* ---------- PROFILE ---------- */
+function profileView(){ return P.stage==='signal'?profileLate():profileEarly(); }
+function tagsHtml(kind){
+  const arr=kind==='companies'?P.companies:(kind==='interests'?P.interests:(kind==='skills'?P.skills:P.langs));
+  const cls=kind==='companies'?'tagx amber':'tagx';
+  return arr.map(v=>`<button class="${cls}" data-remove="${kind}" data-val="${v}">${v}<i>&times;</i></button>`).join('');
+}
+function combo(label,kind,ph,hint){
+  return `<div class="field"><span class="field-label">${label}</span>
+    <div class="combo"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#858B82" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
+      <input type="text" autocomplete="off" data-combo="${kind}" placeholder="${ph}"></div>
+    <div class="tags" data-tags="${kind}">${tagsHtml(kind)}</div>
+    ${hint?`<p class="hint">${hint}</p>`:''}</div>`;
+}
+function companyPicker(){
+  return `<div class="checks">
+      ${COMPANY_SHORTLIST.map(c=>`<button class="check ${P.companies.includes(c)?'on':''}" data-check="${c}"><i>${P.companies.includes(c)?'&#10003;':''}</i>${c}</button>`).join('')}
+      <button class="check add" data-addcustom>&#43; add your own</button></div>
+    ${addCustomOpen?orgboxHtml():''}
+    <div class="tray"><span class="lab">Selected &middot; ${P.companies.length} target${P.companies.length===1?'':'s'}</span>
+      <div class="tags" data-tags="companies" style="margin-top:8px">${tagsHtml('companies')}</div></div>`;
+}
+function profileEarly(){
+  const ct=CONTRIB.find(c=>c.id===P.contrib).t;
+  return `<div class="screen"><div class="card">${chromeBar('','building your match',lanePips(false))}
+    <div class="pad"><div class="panel top">
+      <span class="eyebrow">A few quick things</span>
+      <h2 class="ptitle">What can you already work with?</h2>
+      <p class="psub">No wrong answers. We only ever suggest something sized for a first win.</p>
+      <div class="tunedfor" style="margin-top:var(--gap)"><span class="chip plain"><span class="eyebrow">Contributing as</span> ${ct}
+        <button class="changepill" data-go="contrib">change</button></span></div>
+      ${pathSkill().show?combo(pathSkill().label,pathSkill().kind,pathSkill().ph,pathSkill().hint):''}
+      ${combo("What kind of projects pull you in?",'interests','climate data, maps, education tools...','')}
+      <div class="field"><span class="field-label">How big should your first task be?</span>
+        <div class="sizes">
+          <button class="size ${P.size==='docs'?'on':''}" data-size="docs"><div class="t">Docs fix</div><div class="d">Improve a confusing guide.</div></button>
+          <button class="size ${P.size==='small'?'on':''}" data-size="small"><div class="t">Small bug</div><div class="d">One contained fix.</div></button>
+          <button class="size ${P.size==='feature'?'on':''}" data-size="feature"><div class="t">Small feature</div><div class="d">A tidy little add.</div></button>
+        </div>
+        <p class="hint">You can change this later. Start wherever feels safe.</p></div>
+      ${earlyCompaniesOpen
+        ? `<div class="field"><span class="field-label">Target companies (optional)</span>${companyPicker()}</div>`
+        : `<div class="optional"><span class="txt">Aiming at a specific company already?</span>
+            <button class="add" data-optcompanies>&#43; add target companies (optional)</button></div>`}
+      <div class="actions"><button class="btn" data-go="preview">See what I'll get &rarr;</button>
+        <button class="linklike" data-go="contrib">&larr; Back</button></div>
+    </div></div></div></div>`;
+}
+function profileLate(){
+  const ct=CONTRIB.find(c=>c.id===P.contrib).t;
+  return `<div class="screen"><div class="card">${chromeBar('','building your match',lanePips(true))}
+    <div class="pad"><div class="panel top">
+      <span class="eyebrow">Tell us where this counts</span>
+      <h2 class="ptitle">Where do you want this to count?</h2>
+      <p class="psub">Ranked for relevance, not volume. We'll skip the trivial stuff.</p>
+      <div class="tunedfor amber" style="margin-top:var(--gap)"><span class="chip plain"><span class="eyebrow">Contributing as</span> ${ct}
+        <button class="changepill amber" data-go="contrib">change</button></span></div>
+      <div class="primary-signal">
+        <div class="ps-head"><span class="badge">Primary signal</span><span class="ttl">Target companies</span></div>
+        ${companyPicker()}
+      </div>
+      ${pathSkill().show?combo(pathSkill().label,pathSkill().kind,pathSkill().ph,pathSkill().hint):''}
+      ${combo('What do you want to be credible in?','interests','distributed systems, developer tooling, infra...','')}
+      <div class="field"><span class="field-label">How substantial?</span>
+        <div class="sizes">
+          <button class="size ${P.size==='small'?'amon':''}" data-size="small"><div class="t">Small bug</div><div class="d">Quick contained fix.</div></button>
+          <button class="size ${P.size==='feature'?'amon':''}" data-size="feature"><div class="t">Feature</div><div class="d">Real, citable work.</div></button>
+          <button class="size ${P.size==='hard'?'amon':''}" data-size="hard"><div class="t">Hard problem</div><div class="d">High-credibility depth.</div></button>
+        </div></div>
+      <div class="actions"><button class="btn amber" data-go="preview">See my signal &rarr;</button>
+        <button class="linklike" data-go="contrib">&larr; Back</button></div>
+    </div></div></div></div>`;
+}
+
+/* ---------- PREVIEW ---------- */
+function previewView(){
+  const am=P.stage==='signal';
+  if(am){
+    const named=P.companies.length?P.companies.slice(0,3).join(', '):'the orgs you name';
+    return `<div class="screen"><div class="card">${chromeBar('','tuning your results...')}
+      <div class="pad amber"><div class="panel split">
+        <div class="rail amber"><span class="eyebrow">Here's what's coming</span>
+          <h2>Issues worth putting <em>on a CV.</em></h2>
+          <p>We rank for relevance to where you want to work, and throw out the rest.</p>
+          <div class="assure">Every match is signal you can point a recruiter at.</div></div>
+        <div>
+          <div class="bullets">
+            <div class="b"><i>&rsaquo;</i><span>Issues inside <b>${named}</b> and the orgs you named.</span></div>
+            <div class="b"><i>&rsaquo;</i><span>Substantial work in high-credibility repos.</span></div>
+            <div class="b"><i>&rsaquo;</i><span>Trivial "good first issues" <b>filtered out</b>.</span></div>
+            <div class="b"><i>&rsaquo;</i><span>Each ranked by relevance to your targets, not by ease.</span></div>
+          </div>
+          <div class="actions"><button class="btn amber" data-action="run">Show me my matches &rarr;</button>
+            <button class="btn ghost" data-go="profile">Adjust answers</button></div>
+          <p class="note" style="margin-top:var(--gap-s)">A preview, not a result. Ranked issues open next.</p>
+        </div>
+      </div></div></div></div>`;
+  }
+  return `<div class="screen"><div class="card">${chromeBar('','tuning your results...')}
+    <div class="pad"><div class="panel split">
+      <div class="rail"><span class="eyebrow">Here's what's coming</span>
+        <h2>Issues you can actually <em>finish.</em></h2>
+        <p>We favour the things that turn a scary first PR into a doable evening.</p>
+        <div class="assure">Your first merged PR is the whole goal. We'll walk you right up to it.</div></div>
+      <div>
+        <div class="bullets">
+          <div class="b"><i>&#10003;</i><span>Repos that reply to newcomers in <b>days, not months</b>.</span></div>
+          <div class="b"><i>&#10003;</i><span>Tasks sized for one focused sitting.</span></div>
+          <div class="b"><i>&#10003;</i><span>Clear, friendly contributing guides.</span></div>
+          <div class="b"><i>&#10003;</i><span>Difficulty capped, nothing needing deep context.</span></div>
+        </div>
+        <div class="actions"><button class="btn" data-action="run">Show me my issues &rarr;</button>
+          <button class="btn ghost" data-go="profile">Adjust answers</button></div>
+        <p class="note" style="margin-top:var(--gap-s)">A preview, not a result. Ranked issues open next.</p>
+      </div>
+    </div></div></div></div>`;
+}
+
+/* ---------- RESULTS (real backend) ---------- */
+function resultsShell(am,inner){
+  return `<div class="screen"><div class="card ${am?'amberui':''}">${chromeBar('issuescout.dev/results')}
+    <div class="pad"><div class="panel">${inner}</div></div></div></div>`;
+}
+function resultsView(){
+  const am=P.stage==='signal';
+  if(loading) return resultsShell(am,`<div class="loadwrap"><div class="spin"></div>
+    <div><h2 class="ptitle" style="font-weight:700">Finding your matches&hellip;</h2>
+    <p class="psub loadmsg" id="loadmsg" style="margin:8px auto 0">${esc(LOAD_MSGS[0])}</p></div>
+    <div class="loadsteps" id="loadsteps">
+      <span class="ls on">Search</span><span class="ls">Repo health</span><span class="ls">Score</span><span class="ls">Rank</span>
+    </div></div>`);
+  if(resultsError) return resultsShell(am,`<div class="loadwrap errwrap">
+    <h2 class="ptitle" style="font-weight:700">Couldn't load matches</h2>
+    <p class="psub" style="margin:8px auto 0">${esc(resultsError)}</p>
+    <div class="actions" style="justify-content:center"><button class="btn ${am?'amber':''}" data-action="run">Try again</button>
+      <button class="btn ghost" data-go="profile">Adjust answers</button></div></div>`);
+  const issues=(results&&results.issues)||[];
+  if(!issues.length) return resultsShell(am,`<div class="loadwrap errwrap">
+    <h2 class="ptitle" style="font-weight:700">No matches right now</h2>
+    <p class="psub" style="margin:8px auto 0">${esc((results&&results.note)||'Nothing open and unassigned fit your filters this time. Try broadening your languages or topics, or different target companies.')}</p>
+    <div class="actions" style="justify-content:center"><button class="btn ${am?'amber':''}" data-action="run">Try again</button>
+      <button class="btn ghost" data-go="profile">Adjust answers</button></div></div>`);
+  if(sel>=issues.length) sel=0;
+  const r=issues[sel];
+  return resultsShell(am,`
+      <div class="res-split">
+        <div class="rlist">
+          <div class="rescount">${issues.length} issue${issues.length===1?'':'s'}${results&&results.elapsedMs?` &middot; matched in ${(results.elapsedMs/1000).toFixed(1)}s`:''}</div>
+          <div class="rscroll">${issues.map((it,k)=>rowHtml(it,k,am)).join('')}</div>
+          <div class="actions"><button class="btn ${am?'amber':''}" data-go="welcome">Start over</button>
+            <button class="linklike" data-go="profile">&larr; Adjust</button></div>
+        </div>
+        <div class="detail ${am?'amber':''}" id="detail">${detailHtml(r,am)}</div>
+      </div>`);
+}
+function rowHtml(it,k,am){
+  const pct=it.score|0; const word=pct>=82?'strong':pct>=68?'good':'fair';
+  return `<button class="rrow ${k===sel?'sel':''}" data-sel="${k}">
+    <div class="t1"><span class="rk">#${k+1}</span><span class="repo">${esc(it.repo)}</span>
+      <span class="matchpill ${am?'amber':''}" style="margin-left:auto">${word} ${pct}%</span></div>
+    <div class="t2">${esc(it.title)}</div></button>`;
+}
+function detailHtml(it,am){
+  const pct=it.score|0;
+  const resp=it.responsiveness||{dots:2,blurb:''}, docs=it.documentation||{dots:2,blurb:''};
+  const bars=it.bars||[];
+  return `<div class="lc-row"><span class="pill ${am?'amber':''}">${esc(it.diffLabel||'')}</span>
+      <span class="repo">${esc(it.repo)}</span>
+      ${it.isTarget?`<span class="pill ${am?'amber':''}" style="margin-left:4px">target org</span>`:''}
+      <span class="matchpill ${am?'amber':''}">fit ${pct}%</span></div>
+    <h3>${esc(it.title)}</h3>
+    <div class="whybox"><span class="lab">Why this fits you</span>${esc(it.reason)}</div>
+    <div class="signals"><span class="lab">What you're walking into</span>
+      <div class="sgrid">
+        <div class="sig"><div class="sh"><span>Responsiveness</span><span class="dots">${dots(resp.dots)}</span></div><div class="sv">${esc(resp.blurb)}</div></div>
+        <div class="sig"><div class="sh"><span>Documentation</span><span class="dots">${dots(docs.dots)}</span></div><div class="sv">${esc(docs.blurb)}</div></div>
+      </div></div>
+    <div class="fitbreak"><div class="fh"><span>Fit breakdown</span><b>fit ${pct}%</b></div>
+      ${bars.map(b=>`<div class="frow"><span>${esc(b.label)}</span><div class="ft"><i style="width:${b.pct|0}%"></i></div></div>`).join('')}</div>
+    <div class="rcta">
+      <a class="chiplink solid" href="${esc(it.url||'#')}" target="_blank" rel="noopener">Open issue &#8599;</a>
+      <a class="chiplink" href="${esc(it.guide||'#')}" target="_blank" rel="noopener">Contributing guide &#8599;</a>
+      <button class="chiplink" data-save>Save to shortlist</button></div>
+    <p class="healthline">repo health &middot; ${esc(it.healthBlurb||'')}</p>`;
+}
+function dots(f){f=f||0;let s='';for(let x=0;x<4;x++)s+=`<i class="${x<f?'f':''}"></i>`;return s;}
+
+/* ---------- wiring ---------- */
+function wire(){
+  root.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{ if(b.dataset.go==='welcome'){ P={stage:null,contrib:'code',langs:[],skills:[],interests:[],companies:[],size:null}; earlyCompaniesOpen=false; addCustomOpen=false; results=null; loading=false; resultsError=null; } go(b.dataset.go); });
+  root.querySelectorAll('[data-action="run"]').forEach(b=>b.onclick=runMatch);
+  root.querySelectorAll('[data-stage]').forEach(b=>b.onclick=()=>{ P.stage=b.dataset.stage; earlyCompaniesOpen=false; addCustomOpen=false; go('contrib'); });
+  root.querySelectorAll('[data-contrib]').forEach(b=>b.onclick=()=>{ P.contrib=b.dataset.contrib; const am=P.stage==='signal';
+    root.querySelectorAll('.tile').forEach(t=>{ t.classList.remove('on','amon'); const s=t.querySelector('.state'); if(s)s.innerHTML='CHOOSE &rarr;'; });
+    b.classList.add(am?'amon':'on'); const s=b.querySelector('.state'); if(s)s.innerHTML='SELECTED &#10003;'; });
+  root.querySelectorAll('[data-size]').forEach(b=>b.onclick=()=>{ P.size=b.dataset.size; const cls=P.stage==='signal'?'amon':'on';
+    b.parentElement.querySelectorAll('.size').forEach(s=>s.classList.remove('on','amon')); b.classList.add(cls); });
+  root.querySelectorAll('[data-live-stage]').forEach(b=>b.onclick=()=>{ live.stage=b.dataset.liveStage; refreshLive(); });
+  root.querySelectorAll('[data-live-stack]').forEach(b=>b.onclick=()=>{ live.stack=b.dataset.liveStack; refreshLive(); });
+  root.querySelectorAll('[data-combo]').forEach(setupCombo);
+  const os=root.querySelector('[data-orgsearch]'); if(os) setupOrgSearch(os);
+  root.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{ removeTag(b.dataset.remove,b.dataset.val); refreshKind(b.dataset.remove); });
+  root.querySelectorAll('[data-check]').forEach(b=>b.onclick=()=>{ const c=b.dataset.check; P.companies.includes(c)?P.companies=P.companies.filter(x=>x!==c):P.companies.push(c); refreshKind('companies'); });
+  root.querySelectorAll('[data-optcompanies]').forEach(b=>b.onclick=()=>{ earlyCompaniesOpen=true; const opt=b.closest('.optional');
+    const tmp=document.createElement('div'); tmp.innerHTML=`<div class="field"><span class="field-label">Target companies (optional)</span>${companyPicker()}</div>`;
+    opt.replaceWith(tmp.firstElementChild); wire(); });
+  root.querySelectorAll('[data-addcustom]').forEach(b=>b.onclick=()=>{ addCustomOpen=!addCustomOpen; const existing=root.querySelector('.orgbox');
+    if(addCustomOpen && !existing){ const parent=b.closest('.checks').parentElement; const tray=parent.querySelector('.tray');
+      const tmp=document.createElement('div'); tmp.innerHTML=orgboxHtml(); parent.insertBefore(tmp.firstElementChild, tray); justOpenedOrg=true; wire(); }
+    else if(!addCustomOpen && existing){ existing.remove(); } });
+  root.querySelectorAll('[data-sel]').forEach(b=>b.onclick=()=>selectMatch(+b.dataset.sel));
+  rewireDetail();
+}
+function refreshKind(kind){
+  root.querySelectorAll(`[data-tags="${kind}"]`).forEach(host=>{ host.innerHTML=tagsHtml(kind);
+    host.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{ removeTag(kind,b.dataset.val); refreshKind(kind); }); });
+  if(kind==='companies') refreshCompanyChips();
+}
+function refreshCompanyChips(){
+  root.querySelectorAll('[data-check]').forEach(b=>{ const on=P.companies.includes(b.dataset.check);
+    b.classList.toggle('on',on); const i=b.querySelector('i'); if(i)i.innerHTML=on?'&#10003;':''; });
+  const lab=root.querySelector('.tray .lab'); if(lab) lab.textContent=`Selected \u00b7 ${P.companies.length} target${P.companies.length===1?'':'s'}`;
+}
+function orgboxHtml(){ return `<div class="orgbox"><div class="orgfield"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#858B82" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg><input type="text" autocomplete="off" data-orgsearch placeholder="Search a GitHub org, or type a name"><span class="orgcount" data-orgcount></span></div><div class="orglist" data-orglist></div></div>`; }
+function selectMatch(k){ sel=k; const am=P.stage==='signal'; const issues=(results&&results.issues)||[];
+  const d=document.getElementById('detail'); if(d&&issues[k]) d.innerHTML=detailHtml(issues[k],am);
+  root.querySelectorAll('[data-sel]').forEach(x=>x.classList.toggle('sel',+x.dataset.sel===k));
+  rewireDetail();
+}
+function rewireDetail(){ root.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>{ b.textContent='Saved \u2713'; b.style.borderColor='var(--green)'; }); }
+function refreshLive(){
+  if(!document.getElementById('widget')) return;
+  document.querySelectorAll('#widget .seg').forEach(s=>s.classList.toggle('amber',live.stage==='signal'));
+  document.querySelectorAll('[data-live-stage]').forEach(b=>b.classList.toggle('on',b.dataset.liveStage===live.stage));
+  document.querySelectorAll('[data-live-stack]').forEach(b=>b.classList.toggle('on',b.dataset.liveStack===live.stack));
+  document.getElementById('livecard').innerHTML=liveCard(live.stage,live.stack);
+}
+function removeTag(kind,val){
+  if(kind==='companies')P.companies=P.companies.filter(x=>x!==val);
+  else if(kind==='interests')P.interests=P.interests.filter(x=>x!==val);
+  else if(kind==='skills')P.skills=P.skills.filter(x=>x!==val);
+  else P.langs=P.langs.filter(x=>x!==val);
+}
+function addCompany(name){ name=(name||'').trim(); if(!name)return;
+  if(!P.companies.some(x=>x.toLowerCase()===name.toLowerCase()))P.companies.push(name);
+  refreshKind('companies');
+  const inp=root.querySelector('[data-orgsearch]');
+  if(inp){ inp.value=''; const w=inp.closest('.orgbox'); const list=w.querySelector('[data-orglist]'); if(list)list.innerHTML=''; const cnt=w.querySelector('[data-orgcount]'); if(cnt)cnt.textContent=''; inp.focus(); }
+}
+function setupOrgSearch(inp){
+  const wrap=inp.closest('.orgbox'), list=wrap.querySelector('[data-orglist]'), count=wrap.querySelector('[data-orgcount]');
+  function build(q){
+    const ql=q.toLowerCase();
+    const m = q ? ORG_INDEX.filter(o=>o.name.toLowerCase().includes(ql)||o.handle.toLowerCase().includes(ql)||(o.sub&&o.sub.includes(ql))).slice(0,4) : [];
+    count.textContent = q ? `${m.length} match${m.length===1?'':'es'}` : '';
+    let html = m.map((o,idx)=>`<button class="orgrow ${idx===0?'cursor':''}" data-orgadd="${o.name}">
+        <span class="ava">${o.name[0].toUpperCase()}</span>
+        <div><div class="oname">${o.name}</div><div class="ohandle">github.com/${o.handle}${o.sub?' &middot; '+o.sub:''}</div></div>
+        <span class="orow-r">${o.verified?'<span class="vbadge">&#10003; verified org</span>':'<span class="addlink">add</span>'}</span></button>`).join('');
+    if(q) html += `<button class="orgrow custom" data-orgcustom="${q}">
+        <span class="ava dash">+</span>
+        <div><div class="oname" style="color:var(--amber-deep)">Add &ldquo;${q}&rdquo; as a custom target</div>
+        <div class="osub">we'll resolve it to a GitHub org if we can, otherwise keep it as a label</div></div></button>`;
+    list.innerHTML = html || '';
+    list.querySelectorAll('[data-orgadd]').forEach(b=>b.onmousedown=(e)=>{e.preventDefault();addCompany(b.dataset.orgadd);});
+    list.querySelectorAll('[data-orgcustom]').forEach(b=>b.onmousedown=(e)=>{e.preventDefault();addCompany(b.dataset.orgcustom);});
+  }
+  inp.oninput=()=>build(inp.value.trim());
+  inp.onkeydown=(e)=>{ if(e.key==='Enter'){ e.preventDefault(); const q=inp.value.trim(); if(!q)return;
+    const first=list.querySelector('[data-orgadd]'); addCompany(first?first.dataset.orgadd:q); } };
+  build('');
+  if(justOpenedOrg){ inp.focus(); justOpenedOrg=false; }
+}
+function setupCombo(inp){
+  const kind=inp.dataset.combo;
+  const pool=kind==='companies'?COMPANY_SHORTLIST:(kind==='interests'?INTERESTS:(kind==='skills'?pathSkill().sugg||[]:LANGS));
+  const box=inp.parentElement; let cursor=-1;
+  const arrOf=()=>kind==='companies'?P.companies:(kind==='interests'?P.interests:(kind==='skills'?P.skills:P.langs));
+  const close=()=>{ const s=box.querySelector('.suggest'); if(s)s.remove(); cursor=-1; };
+  const add=(v)=>{ v=(v||'').trim(); if(!v)return; const arr=arrOf();
+    const canon=pool.find(x=>x.toLowerCase()===v.toLowerCase())||v;
+    if(!arr.some(x=>x.toLowerCase()===canon.toLowerCase()))arr.push(canon); refreshKind(kind); inp.value=''; close(); inp.focus(); };
+  const show=()=>{ close(); const q=inp.value.trim().toLowerCase(); const arr=arrOf();
+    let hits=pool.filter(x=>!arr.includes(x)); if(q)hits=hits.filter(x=>x.toLowerCase().includes(q)); hits=hits.slice(0,6);
+    if(!hits.length)return;
+    const d=document.createElement('div'); d.className='suggest';
+    d.innerHTML=hits.map((h,idx)=>`<button data-pick="${h}" class="${idx===0?'cursor':''}">${h}<span class="addhint">&crarr; add</span></button>`).join('');
+    box.appendChild(d); d.querySelectorAll('[data-pick]').forEach(b=>b.onmousedown=(e)=>{e.preventDefault();add(b.dataset.pick);}); cursor=0; };
+  inp.oninput=show; inp.onfocus=show;
+  inp.onkeydown=(e)=>{ const d=box.querySelector('.suggest'); const opts=d?[...d.querySelectorAll('[data-pick]')]:[];
+    if(e.key==='Enter'){ e.preventDefault(); (cursor>=0&&opts[cursor])?add(opts[cursor].dataset.pick):add(inp.value); }
+    else if(e.key==='ArrowDown'&&opts.length){ e.preventDefault(); cursor=Math.min(cursor+1,opts.length-1); opts.forEach((o,i)=>o.classList.toggle('cursor',i===cursor)); }
+    else if(e.key==='ArrowUp'&&opts.length){ e.preventDefault(); cursor=Math.max(cursor-1,0); opts.forEach((o,i)=>o.classList.toggle('cursor',i===cursor)); }
+    else if(e.key==='Escape')close(); };
+  inp.onblur=()=>setTimeout(close,160);
+}
+render();
+(function(){
+  const brand=document.getElementById('brand');
+  const home=()=>{ P={stage:null,contrib:'code',langs:[],skills:[],interests:[],companies:[],size:null}; earlyCompaniesOpen=false; addCustomOpen=false; results=null; loading=false; resultsError=null; sel=0; live={stage:'start',stack:'Python'}; go('welcome'); };
+  brand.onclick=home;
+  brand.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); home(); } };
+})();
+</script>
+</body>
+</html>
