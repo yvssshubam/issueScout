@@ -156,6 +156,15 @@ def run_pipeline(profile: dict, max_issues: int = 10,
         enrich_issue_with_career(issue, cmap, target_orgs,
                                  profile.get("career_goal", ""))
 
+    # Quality floor: drop issues whose repo is below the level's star floor,
+    # but never drop a target-company issue (those are wanted regardless).
+    from github_client import level_config
+    min_stars = level_config(level)["min_repo_stars"]
+    if min_stars:
+        issues = [i for i in issues
+                  if i.get("from_target_org")
+                  or (i.get("repo_health", {}).get("stars", 0) or 0) >= min_stars]
+
     # CHANGED: rank by the explicit level. The year/experience preset is
     # passed as a secondary nudge; blend=1.0 lets level fully drive. Set
     # blend=0.75 if you want college year / experience to still matter.

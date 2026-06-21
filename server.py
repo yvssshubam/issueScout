@@ -1,23 +1,4 @@
-"""
-server.py — web host for the IssueScout onboarding flow.
-
-Serves the static onboarding wizard in web/ and exposes a single JSON
-endpoint, POST /api/match, that translates the onboarding answers into the
-profile shape run_pipeline expects, runs the REAL deterministic pipeline
-(live GitHub issues + repo-health + scoring + LLM/templated explanation),
-and returns ranked matches the frontend renders into the design's results
-screens.
-
-No third-party web framework: built on the stdlib http.server so it runs
-with nothing more than the project's existing dependencies.
-
-Run:
-    python server.py            # then open http://localhost:8000
-    python server.py --port 9000
-"""
-
 from __future__ import annotations
-
 import argparse
 import collections
 import json
@@ -402,7 +383,7 @@ def do_match(ans: dict) -> dict:
 # extra dependency.
 # --------------------------------------------------------------------- #
 MAX_BODY_BYTES = 16 * 1024          # reject request bodies larger than 16 KB
-RATE_MAX = 20                       # max /api/match calls ...
+RATE_MAX = 5                    # max /api/match calls ...
 RATE_WINDOW = 60.0                  # ... per this many seconds, per client IP
 
 _rate_lock = threading.Lock()
@@ -534,9 +515,15 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
+    # Default host: 0.0.0.0 in production (so cloud platforms can reach us),
+    # 127.0.0.1 in dev (loopback only). Override with --host or HOST env var.
+    default_host = os.environ.get("HOST", "0.0.0.0" if "PORT" in os.environ else "127.0.0.1")
+    # Default port: cloud platforms (Render, Railway, Fly) set PORT; locally we use 8000.
+    default_port = int(os.environ.get("PORT", 8000))
+
     ap = argparse.ArgumentParser(description="IssueScout onboarding web server")
-    ap.add_argument("--port", type=int, default=8000)
-    ap.add_argument("--host", default="127.0.0.1")
+    ap.add_argument("--port", type=int, default=default_port)
+    ap.add_argument("--host", default=default_host)
     args = ap.parse_args()
 
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)

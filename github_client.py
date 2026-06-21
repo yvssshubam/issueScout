@@ -1,32 +1,5 @@
-"""
-github_client.py — IssueScout component 1 (rebuilt).
-
-Fetches candidate open issues from GitHub. Pure deterministic code: no
-language model is involved anywhere here.
-
-This version carries two changes over the original:
-
-  1. COMPANY-ORG FETCH FIX. Target-company orgs are now fetched FIRST,
-     before the language and topic searches, so they win the per-minute
-     search-rate budget instead of losing it. Org-fetch failures are no
-     longer swallowed silently: they are recorded on `client.warnings`
-     so the UI can tell the user "couldn't reach target orgs" instead of
-     just showing zero of them. And org fetches fall back to unlabeled
-     open issues when the beginner labels return nothing, so a target
-     company that simply doesn't use "good first issue" still surfaces.
-
-  2. LEVEL SELECTOR. A `level` of "beginner" / "amateur" / "professional"
-     chooses which label net to fetch and how big an issue to prefer.
-     Beginners get good-first-issue only; amateurs add help-wanted;
-     professionals drop the beginner gate entirely, take help-wanted plus
-     an unlabeled pass, and pull from higher-star repos.
-
-Auth: set GITHUB_TOKEN in the environment. Works unauthenticated too,
-just with much lower rate limits.
-"""
 
 from __future__ import annotations
-
 import hashlib
 import json
 import os
@@ -71,7 +44,7 @@ LEVEL_CONFIG: dict[str, dict[str, Any]] = {
     "beginner": {
         "labels": GFI_LABELS,
         "unlabeled": False,
-        "min_repo_stars": 0,
+        "min_repo_stars": 25,
         "issue_size": "small",   # steer toward small, well-scoped issues
         "max_comments": 40,      # avoid heavily-contested threads
     },
@@ -424,8 +397,9 @@ class GitHubClient:
         langs = list(languages) or [None]
         seen: dict[str, dict] = {}
         for topic in topics:
+            topic_slug = topic.strip().lower().replace(" ", "-")
             for lang in langs:
-                clauses = [f"topic:{topic}"]
+                clauses = [f"topic:{topic_slug}"]
                 if lang:
                     clauses.append(f"language:{lang}")
                 if min_stars:

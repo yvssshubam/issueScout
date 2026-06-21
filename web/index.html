@@ -374,7 +374,21 @@ const PATH_SKILL = {
   community:{show:false},
 };
 function pathSkill(){ return PATH_SKILL[P.contrib] || PATH_SKILL.code; }
-const INTERESTS = ['developer tooling','web frameworks','distributed systems','machine learning','infrastructure','databases','data visualization','security','climate','education','maps','APIs','CLI tools','game dev'];
+// Interest suggestions are per contribution path, so a design or docs
+// contributor is never shown machine-learning / distributed-systems chips
+// that cannot improve their match. Keys must match CONTRIB ids; anything
+// missing falls through to the code list via pathInterests().
+const PATH_INTERESTS = {
+  code:     ['developer tooling','web frameworks','CLI tools','APIs','databases','security','game dev'],
+  data:     ['machine learning','data visualization','databases','distributed systems','APIs'],
+  devops:   ['infrastructure','distributed systems','databases','security','developer tooling'],
+  docs:     ['developer tooling','web frameworks','APIs','education','climate','maps'],
+  design:   ['design systems','accessibility','web frameworks','data visualization','maps','education'],
+  a11y:     ['accessibility','design systems','web frameworks','developer tooling','education','maps'],
+  i18n:     ['education','web frameworks','developer tooling','maps','climate','accessibility'],
+  community:['education','developer tooling','web frameworks','security','accessibility','climate'],
+};
+function pathInterests(){ return PATH_INTERESTS[P.contrib] || PATH_INTERESTS.code; }
 const COMPANY_SHORTLIST = ['Microsoft','Google','Vercel','HashiCorp','Mozilla','Netflix','Meta','Stripe','Shopify'];
 const ORG_INDEX = [
   {name:'Microsoft',handle:'microsoft',verified:true},{name:'Google',handle:'google',verified:true},
@@ -888,7 +902,7 @@ function setupOrgSearch(inp){
 }
 function setupCombo(inp){
   const kind=inp.dataset.combo;
-  const pool=kind==='companies'?COMPANY_SHORTLIST:(kind==='interests'?INTERESTS:(kind==='skills'?pathSkill().sugg||[]:LANGS));
+  const pool=kind==='companies'?COMPANY_SHORTLIST:(kind==='interests'?pathInterests():(kind==='skills'?pathSkill().sugg||[]:LANGS));
   const box=inp.parentElement; let cursor=-1;
   const arrOf=()=>kind==='companies'?P.companies:(kind==='interests'?P.interests:(kind==='skills'?P.skills:P.langs));
   const close=()=>{ const s=box.querySelector('.suggest'); if(s)s.remove(); cursor=-1; };
